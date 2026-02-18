@@ -11,7 +11,10 @@ try {
     const existingContent = await file.exists() ? await file.text() : "";
     
     // Tambahkan catatan baru (dengan timestamp agar lebih keren)
-    const timestamp = new Date().toLocaleString();
+    const getTimestamp = () => {
+  return new Date().toISOString().replace("T", " ").split(".")[0];
+};
+    const timestamp = getTimestamp();
     const formattedNote = `[${timestamp}] ${content}\n`;
     
     // Simpan kembali
@@ -65,6 +68,21 @@ async function deleteNote(lineNumber: number) {
 const command = Bun.argv[2]; 
 const value = Bun.argv[3];
 
+async function searchNotes(keyword: string) {
+  const file = Bun.file(FILE_NAME);
+  if (!(await file.exists())) return;
+
+  const content = await file.text();
+  const lines = content.trim().split("\n");
+
+  // Cari baris yang mengandung kata kunci (keyword)
+  const results = lines.filter(line => 
+    line.toLowerCase().includes(keyword.toLowerCase())
+  );
+
+  console.log(`\n--- Hasil Pencarian: "${keyword}" ---`);
+  results.forEach(res => console.log(res));
+}
 
 if (command === "delete") {
   if (value) {
@@ -78,18 +96,25 @@ if (command === "delete") {
     console.log("⚠️ Masukkan nomor baris. Contoh: bun run index.ts delete 1");
   }
 } 
-// TAMBAHKAN BAGIAN INI:
+else if (command === "search") {
+  if (value) {
+    await searchNotes(value); 
+  } else {
+    console.log("⚠️ Masukkan kata kunci pencarian!");
+  }
+}
 else if (command === "list" || command === "view") {
   await readNotes();
 } 
 else if (command) {
-  // Jika argumen bukan 'delete' atau 'list', maka dianggap menambah catatan
+ 
   await addNote(command);
-  await readNotes(); // Tampilkan list setelah menambah
+  await readNotes(); 
 } 
 else {
   console.log("💡 Tips:");
   console.log("   Lihat Semua : bun run index.ts list");
   console.log("   Tambah      : bun run index.ts \"isi catatan\"");
   console.log("   Hapus       : bun run index.ts delete [nomor]");
+  console.log("   Cari        : bun run index.ts search [kata kunci]");
 }
